@@ -126,7 +126,7 @@ class SimpleRabbitMQ {
         return $this->channel->queue_bind($queue, $exchange, $routing_key);
     }    
 
-    public function pub(string $message, string $exchange = null, string $routing_key = null)
+    public function pub(string $message, string $exchange = null, string $routing_key = null, array $message_properties = ['delivery_mode' => 2/*make message persistent*/])
     {
         if ($exchange === null) {
             $exchange = $this->exchangeName;
@@ -134,7 +134,7 @@ class SimpleRabbitMQ {
         if ($routing_key === null) {
             $routing_key = $this->queueName;
         }
-        return $this->channel->basic_publish(new AMQPMessage($message), $exchange, $routing_key);
+        return $this->channel->basic_publish(new AMQPMessage($message, $message_properties), $exchange, $routing_key);
     }
 
     /**
@@ -168,11 +168,14 @@ class SimpleRabbitMQ {
         return $this->channel->wait();
     }
 
-    function readAllMessages()
+    function readAllMessages(int $sleep = 0)
     {
         $queueCountMessages = $this->queueCountMessage();
         for ($i = 0; $i < $queueCountMessages; $i++) {
             $this->readMessage();
+            if ($sleep > 0) {
+                usleep($sleep);
+            }
         }
     }
 

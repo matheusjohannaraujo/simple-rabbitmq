@@ -8,7 +8,7 @@ $rmq->openChannel();
 $rmq->exchange("my_exchange");
 $rmq->queue("my_queue");
 $rmq->queueBind();
-for ($i = 1; $i <= 1000; $i++) { 
+for ($i = 1; $i <= 10000; $i++) {
     $rmq->pub("test " . $i);
 }
 $rmq->closeChannel();
