@@ -5,7 +5,7 @@ const DEVELOPER_INFO = [
     "autor" => "Matheus Johann Araújo",
     "country" => "Brasil",
     "state" => "Pernambuco",
-    "date" => "2023-02-20"
+    "date" => "2023-02-21"
 ];
 ```
 

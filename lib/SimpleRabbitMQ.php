@@ -9,8 +9,10 @@ class SimpleRabbitMQ {
 
     public static $connection = null;
     public $channel = null;
+    public $exchange = null;
+    public $exchangeName = "";
     public $queue = null;
-    public $queueName = null;
+    public $queueName = "";
     private $host = null;
     private $port = null;
     private $username = null;
@@ -63,6 +65,20 @@ class SimpleRabbitMQ {
     }
 
     /**
+     * $exchange: o nome da exchange que será criada.
+     * $type: o tipo de exchange que será criada. Os tipos disponíveis são: 'direct', 'fanout', 'topic' e 'headers'.
+     * $passive: um valor booleano que indica se a exchange deve ser criada como "passiva" ou não. Quando true, a exchange é declarada como passiva, o que significa que o RabbitMQ apenas verifica se a exchange já existe, sem criar uma nova. Quando false, a exchange é criada se ainda não existir.
+     * $durable: um valor booleano que indica se a exchange deve ser durável ou não. Quando true, a exchange será salva em disco e sobreviverá a reinicializações do servidor RabbitMQ. Quando false, a exchange será considerada transitória e será removida do RabbitMQ quando o servidor for reiniciado.
+     * $auto_delete: um valor booleano que indica se a exchange deve ser excluída automaticamente quando não tiver mais nenhuma ligação com uma fila ou uma exchange. Quando true, a exchange será excluída automaticamente. Quando false, a exchange permanecerá no RabbitMQ mesmo que não tenha mais nenhuma ligação.
+     * $internal: um valor booleano que indica se a exchange é usada apenas para ligações internas com outras exchanges, ou seja, não pode ser publicada diretamente por um produtor. Quando true, a exchange será usada apenas para ligações internas. Quando false, a exchange pode ser publicada diretamente por um produtor.
+     */
+    public function exchange(string $exchange, string $type = 'direct', bool $passive = false, bool $durable = true, bool $auto_delete = false, bool $internal = false)
+    {
+        $this->exchangeName = $exchange;
+        return $this->exchange = $this->channel->exchange_declare($exchange, $type, $passive, $durable, $auto_delete, $internal);
+    }
+
+    /**
      * 
      * $queue (string): o nome da fila a ser declarada. Se este argumento for deixado em branco, o RabbitMQ criará uma fila exclusiva com um nome gerado automaticamente.
      * $passive (bool): se definido como true, o RabbitMQ irá verificar se a fila já existe sem tentar criar uma nova. Se a fila não existir, o RabbitMQ irá retornar um erro. O valor padrão é false.
@@ -76,15 +92,44 @@ class SimpleRabbitMQ {
         return $this->queue = $this->channel->queue_declare($queue, $passive, $durable, $exclusive, $auto_delete);
     }
 
-    public function queueSize()
+    public function queueName()
+    {
+        return $this->queue[0] ?? "";
+    }
+
+    public function queueCountMessage()
     {
         return $this->queue[1] ?? -1;
+    }
+
+    public function queueCountConsumer()
+    {
+        return $this->queue[2] ?? -1;
+    }
+
+    /**
+     * $routing_key: uma chave de roteamento que será usada para filtrar as mensagens que a exchange enviará para a fila. A chave de roteamento é usada para identificar qual fila receberá a mensagem, de acordo com as regras definidas pelo tipo de exchange.
+     * $queue: o nome da fila que será ligada à exchange.
+     * $exchange: o nome da exchange que será ligada à fila.     
+     */
+    public function queueBind(string $routing_key = null, string $queue = null, string $exchange = null)
+    {
+        if ($queue === null) {
+            $queue = $this->queueName;
+        }
+        if ($exchange === null) {
+            $exchange = $this->exchangeName;
+        }
+        if ($routing_key === null) {
+            $routing_key = $this->queueName;
+        }
+        return $this->channel->queue_bind($queue, $exchange, $routing_key);
     }    
 
     public function pub(string $message, string $exchange = null, string $routing_key = null)
     {
         if ($exchange === null) {
-            $exchange = "";
+            $exchange = $this->exchangeName;
         }
         if ($routing_key === null) {
             $routing_key = $this->queueName;
@@ -93,16 +138,19 @@ class SimpleRabbitMQ {
     }
 
     /**
+     * $callback: Uma função de retorno que será chamada pelo RabbitMQ quando uma nova mensagem for entregue ao consumidor. Essa função deve aceitar um argumento do tipo \PhpAmqpLib\Message\AMQPMessage, que contém a mensagem entregue.
      * $queue: O nome da fila da qual o consumidor receberá as mensagens.
      * $consumer_tag: Uma tag que identifica o consumidor. Se essa tag não for fornecida, o RabbitMQ gerará uma tag aleatória para o consumidor.
      * $no_local: Quando definido como true, indica que as mensagens publicadas pelo próprio consumidor não devem ser entregues a ele.
      * $no_ack: Quando definido como true, indica que o RabbitMQ não deve esperar uma confirmação de recebimento de mensagens pelo consumidor. Isso significa que as mensagens serão consideradas automaticamente confirmadas e removidas da fila após serem entregues ao consumidor.
      * $exclusive: Quando definido como true, indica que a fila só deve ser usada por este consumidor e será excluída quando o consumidor se desconectar.
-     * $nowait: Quando definido como true, indica que a chamada não deve esperar a resposta do RabbitMQ.
-     * $callback: Uma função de retorno que será chamada pelo RabbitMQ quando uma nova mensagem for entregue ao consumidor. Essa função deve aceitar um argumento do tipo \PhpAmqpLib\Message\AMQPMessage, que contém a mensagem entregue.
+     * $nowait: Quando definido como true, indica que a chamada não deve esperar a resposta do RabbitMQ.     
      */
-    public function sub(callable $callback, string $consumer_tag = "", bool $no_local = false, bool $no_ack = false, bool $exclusive = false, bool $nowait = false)
+    public function sub(callable $callback, string $queue = null, string $consumer_tag = "", bool $no_local = false, bool $no_ack = false, bool $exclusive = false, bool $nowait = false)
     {
+        if ($queue === null) {
+            $queue = $this->queueName;
+        }
         $cb = $callback;
         if (!$no_ack) {
             $channel = &$this->channel;
@@ -112,7 +160,7 @@ class SimpleRabbitMQ {
                 }            
             };
         }
-        return $this->channel->basic_consume($this->queueName, $consumer_tag, $no_local, $no_ack, $exclusive, $nowait, $cb);
+        return $this->channel->basic_consume($queue, $consumer_tag, $no_local, $no_ack, $exclusive, $nowait, $cb);
     }
 
     function readMessage()
@@ -122,7 +170,7 @@ class SimpleRabbitMQ {
 
     function readAllMessages()
     {
-        $queueCountMessages = $this->queueSize();
+        $queueCountMessages = $this->queueCountMessage();
         for ($i = 0; $i < $queueCountMessages; $i++) {
             $this->readMessage();
         }
