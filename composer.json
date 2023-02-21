@@ -1,0 +1,12 @@
+{
+    "require": {
+        "php": ">=7.2.5",
+        "php-amqplib/php-amqplib": "^2.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "lib\\" : "lib/",
+            "Lib\\" : "lib/"
+        }
+    }
+}
