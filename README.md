@@ -1,15 +1,15 @@
-# [SimpleRabbitMQ](https://github.com/matheusjohannaraujo/SimpleRabbitMQ)
+# [SimpleRabbitMQ](https://github.com/matheusjohannaraujo/simple_rabbitmq)
 
 ```php
 const DEVELOPER_INFO = [
     "autor" => "Matheus Johann Araújo",
     "country" => "Brasil",
     "state" => "Pernambuco",
-    "date" => "2023-02-21"
+    "date" => "2023-02-22"
 ];
 ```
 
-### A biblioteca <i>SimpleRabbitMQ</i> foi construída em PHP para simplificar o uso de Pub/Sub do RabbitMQ.
+### O wrapper <i>SimpleRabbitMQ</i> foi construído em PHP para simplificar o uso da biblioteca `php-amqplib/php-amqplib` que trabalha manipulando o RabbitMQ.
 
 #### Compatível com PHP 7 e versões superiores
 
@@ -17,8 +17,10 @@ const DEVELOPER_INFO = [
 
 > docker compose up -d
 
+> cd example
+
 > composer update
 
-> php pub.php
-
 > php sub.php
+
+> php pub.php

@@ -7,34 +7,35 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class SimpleRabbitMQ {
 
+    private static $host = null;
+    private static $port = null;
+    private static $username = null;
+    private static $password = null;
     public static $connection = null;
     public $channel = null;
     public $exchange = null;
     public $exchangeName = "";
     public $queue = null;
-    public $queueName = "";
-    private $host = null;
-    private $port = null;
-    private $username = null;
-    private $password = null;
+    public $queueName = "";    
 
-    public function __construct(string $host = "localhost", string $port = "5672", $username = "user", $password = "password")
+    public static function config(string $host = "localhost", string $port = "5672", $username = "user", $password = "password")
     {
-        $this->host = $host;
-        $this->port = $port;
-        $this->username = $username;
-        $this->password = $password;
+        self::$host = $host;
+        self::$port = $port;
+        self::$username = $username;
+        self::$password = $password;
     }
 
-    public function open()
+    public static function open()
     {
         if (self::$connection === null) {
-            self::$connection = new AMQPStreamConnection($this->host, $this->port, $this->username, $this->password);
+            error_reporting(E_ALL ^ E_DEPRECATED ^ E_WARNING);
+            self::$connection = new AMQPStreamConnection(self::$host, self::$port, self::$username, self::$password);
         }
         return self::$connection;
     }
 
-    public function close()
+    public static function close()
     {
         if (self::$connection !== null) {
             return self::$connection->close();
