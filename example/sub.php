@@ -24,6 +24,6 @@ $srmq->sub($callback2);
 
 //$srmq->readMessage();
 //$srmq->readAllMessages();
-$srmq->waitCallbacks(100);
+$srmq->waitCallbacks();
 $srmq->closeChannel();
 $srmq->close();

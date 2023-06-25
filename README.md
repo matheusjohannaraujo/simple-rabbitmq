@@ -5,7 +5,7 @@ const DEVELOPER_INFO = [
     "autor" => "Matheus Johann Araújo",
     "country" => "Brasil",
     "state" => "Pernambuco",
-    "date" => "2023-02-22"
+    "date" => "2023-06-24"
 ];
 ```
 
@@ -24,3 +24,7 @@ const DEVELOPER_INFO = [
 > php sub.php
 
 > php pub.php
+
+> php sub2.php
+
+> php pub2.php
