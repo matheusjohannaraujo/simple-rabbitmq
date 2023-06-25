@@ -13,7 +13,6 @@ use Interop\Amqp\AmqpMessage;
 use Interop\Queue\Message;
 use Interop\Queue\Consumer;
 
-
 class SimpleRabbitMQ {
 
     private static $host = null;
