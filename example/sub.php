@@ -12,15 +12,17 @@ $srmq->queueBind();
 $callback1 = function($message, $consumer) {
     echo "Message 1: ", $message->getBody(), PHP_EOL;
     $consumer->acknowledge($message);
-    return true;// ACK
+    return true;
 };
+$srmq->sub($callback1);
 
 $callback2 = function($message, $consumer) {
     echo "Message 2: ", $message->getBody(), PHP_EOL;
     $consumer->acknowledge($message);
-    return true;// ACK
+    return true;
 };
-$srmq->sub($callback1);
 $srmq->sub($callback2);
+
 //$srmq->readMessage();
-$srmq->waitCallbacks();
+$srmq->waitCallbacks(15000); //15s
+$srmq->close();

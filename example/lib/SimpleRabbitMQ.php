@@ -58,21 +58,42 @@ class SimpleRabbitMQ {
         return self::$connection;
     }
 
-    public function exchange(string $exchange)
+    public static function close()
     {
+        if (self::$context !== null) {
+            self::$context->close();
+            self::$connection = null;
+            return true;
+        }
+        return false;
+    }
+
+    public function exchange(string $exchange, string $type = 'direct', int $flag = 2)
+    {
+        if ($type !== 'direct' && $type !== 'fanout' && $type !== 'topic' && $type !== 'headers') {
+            $type = AmqpTopic::TYPE_DIRECT;
+        }
+        if ($flag !== 0 && $flag !== 1 && $flag !== 2 && $flag !== 4 && $flag !== 8 && $flag !== 16) {
+            $flag = AmqpQueue::FLAG_DURABLE;
+        }
         $this->exchangeName = $exchange;
         $this->exchange = self::$context->createTopic($this->exchangeName);
-        //$this->exchange->setType(AmqpTopic::TYPE_FANOUT);
-        $this->exchange->setType(AmqpTopic::TYPE_DIRECT);
+        $this->exchange->addFlag($flag);
+        $this->exchange->setType($type);
         return self::$context->declareTopic($this->exchange);
     }
 
-    public function queue(string $queue)
+    public function queue(string $queue, int $flag = 2, array $args = [/*'x-max-priority' => 10*/])
     {
+        if ($flag !== 0 && $flag !== 1 && $flag !== 2 && $flag !== 4 && $flag !== 8 && $flag !== 16) {
+            $flag = AmqpQueue::FLAG_DURABLE;
+        }
         $this->queueName = $queue;
         $this->queue = self::$context->createQueue($this->queueName);
-        $this->queue->addFlag(AmqpQueue::FLAG_DURABLE);
-        //$this->queue->setArguments(['x-max-priority' => 10]);
+        $this->queue->addFlag($flag);
+        if (count($args) > 0) {
+            $this->queue->setArguments($args);
+        }
         return self::$context->declareQueue($this->queue);
     }
 
@@ -81,24 +102,34 @@ class SimpleRabbitMQ {
         return self::$context->bind(new AmqpBind($this->exchange, $this->queue));
     }    
 
-    public function pub_exchange(string $message, int $time = 0)
+    public function pub(string $message, string $type, int $ttl = 0, int $delay = 0)
     {
         $message = self::$context->createMessage($message);
         $producer = self::$context->createProducer();
-        if ($time > 0) {
-            $producer->setTimeToLive($time);
+        if ($delay > 0) {
+            $producer = $producer
+                ->setDelayStrategy(new RabbitMqDlxDelayStrategy())
+                ->setDeliveryDelay($delay);
         }
-        return $producer->send($this->exchange, $message);
+        if ($ttl > 0) {
+            $producer = $producer->setTimeToLive($ttl);
+        }
+        if ($type === "queue") {
+            return $producer->send($this->queue, $message);
+        } else if ($type === "exchange") {
+            return $producer->send($this->exchange, $message);
+        }
+        return false;
     }
 
-    public function pub_queue(string $message, int $time = 0)
+    public function pub_exchange(string $message, int $ttl = 0, int $delay = 0)
     {
-        $message = self::$context->createMessage($message);
-        $producer = self::$context->createProducer();
-        if ($time > 0) {
-            $producer->setTimeToLive($time);
-        }
-        return $producer->send($this->queue, $message);
+        return $this->pub($message, "exchange", $ttl, $delay);
+    }
+
+    public function pub_queue(string $message, int $ttl = 0, int $delay = 0)
+    {
+        return $this->pub($message, "queue", $ttl, $delay);
     }
 
     public function sub(callable $callback, int $time = 0)
