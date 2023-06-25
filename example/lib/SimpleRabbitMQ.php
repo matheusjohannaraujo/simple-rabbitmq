@@ -99,7 +99,7 @@ class SimpleRabbitMQ {
     public function queueBind()
     {
         return self::$context->bind(new AmqpBind($this->exchange, $this->queue));
-    }    
+    }
 
     public function pub(string $message, string $type, int $ttl = 0, int $delay = 0)
     {
@@ -135,8 +135,8 @@ class SimpleRabbitMQ {
     {
         $consumer = self::$context->createConsumer($this->queue);
         if ($this->subscriptionConsumer === null) {
-            $this->subscriptionConsumer = self::$context->createSubscriptionConsumer();    
-        }        
+            $this->subscriptionConsumer = self::$context->createSubscriptionConsumer();
+        }
         $this->subscriptionConsumer->subscribe($consumer, function(Message $message, Consumer $consumer) use ($callback) {
             return $callback($message, $consumer);
         });
