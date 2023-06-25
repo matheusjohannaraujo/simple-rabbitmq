@@ -5,11 +5,11 @@ const DEVELOPER_INFO = [
     "autor" => "Matheus Johann Araújo",
     "country" => "Brasil",
     "state" => "Pernambuco",
-    "date" => "2023-06-24"
+    "date" => "2023-06-25"
 ];
 ```
 
-### O wrapper <i>SimpleRabbitMQ</i> foi construído em PHP para simplificar o uso da biblioteca `php-amqplib/php-amqplib` que trabalha manipulando o RabbitMQ.
+### O wrapper <i>SimpleRabbitMQ</i> foi construído em PHP para simplificar o uso da biblioteca `enqueue/amqp-lib` que trabalha manipulando o RabbitMQ.
 
 #### Compatível com PHP 7 e versões superiores
 
@@ -24,7 +24,3 @@ const DEVELOPER_INFO = [
 > php sub.php
 
 > php pub.php
-
-> php sub2.php
-
-> php pub2.php

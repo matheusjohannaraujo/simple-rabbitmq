@@ -5,25 +5,22 @@ require_once "vendor/autoload.php";
 $srmq = new \Lib\SimpleRabbitMQ();
 $srmq->config();
 $srmq->open();
-$srmq->openChannel();
 $srmq->exchange("my_exchange");
 $srmq->queue("my_queue");
 $srmq->queueBind();
 
-$callback1 = function($msg) {
-    echo "Message 1: ", $msg->body, PHP_EOL;
+$callback1 = function($message, $consumer) {
+    echo "Message 1: ", $message->getBody(), PHP_EOL;
+    $consumer->acknowledge($message);
+    return true;// ACK
+};
+
+$callback2 = function($message, $consumer) {
+    echo "Message 2: ", $message->getBody(), PHP_EOL;
+    $consumer->acknowledge($message);
     return true;// ACK
 };
 $srmq->sub($callback1);
-
-$callback2 = function($msg) {
-    echo "Message 2: ", $msg->body, PHP_EOL;
-    return true;// ACK
-};
 $srmq->sub($callback2);
-
 //$srmq->readMessage();
-//$srmq->readAllMessages();
 $srmq->waitCallbacks();
-$srmq->closeChannel();
-$srmq->close();
