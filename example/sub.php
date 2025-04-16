@@ -46,7 +46,9 @@ $srmq->sub($callback2);
 // $srmq->readMessage();
 
 // Wait for messages and trigger callbacks for up to 15 seconds
-$srmq->waitCallbacks(15000); // 15000 milliseconds = 15 seconds
+//$srmq->waitCallbacks(15000); // 15000 milliseconds = 15 seconds
+
+$srmq->waitCallbacks(); // Infinite wait
 
 // Close the connection to the RabbitMQ server
 $srmq->close();

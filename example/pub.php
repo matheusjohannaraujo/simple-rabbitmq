@@ -22,8 +22,8 @@ $srmq->queue("my_queue");
 // Bind the declared queue to the exchange
 $srmq->queueBind();
 
-// Publish 30,000 messages to the exchange
-for ($i = 1; $i <= 30000; $i++) {
+// Publish 20,000 messages to the exchange
+for ($i = 1; $i <= 20000; $i++) {
     $srmq->pub_exchange("test " . $i); // Publish a message with a test string
     echo $i, PHP_EOL; // Output the message number to the console
 }
