@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0ac31ea2c172cc3b985798cedd502753",
+    "content-hash": "071c3577a35a86ab82ad0477c5037664",
     "packages": [
         {
             "name": "enqueue/amqp-lib",

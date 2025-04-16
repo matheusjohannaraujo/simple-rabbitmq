@@ -32,7 +32,7 @@ composer require mjohann/simple-rabbitmq
 
 ## 🧪 Usage Example
 
-### Pub
+### Publisher
 ```php
 <?php
 
@@ -69,7 +69,7 @@ $srmq->close();
 
 ```
 
-### Sub
+### Subscriber
 ```php
 <?php
 
