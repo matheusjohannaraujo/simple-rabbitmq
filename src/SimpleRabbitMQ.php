@@ -1,19 +1,25 @@
 <?php
 
-namespace Lib;
+/*
+	GitHub: https://github.com/matheusjohannaraujo/simple-rabbitmq
+	Country: Brasil
+	State: Pernambuco
+	Developer: Matheus Johann Araujo
+	Date: 2025-04-16
+*/
 
-// https://php-enqueue.github.io/transport/amqp/#purge-queue-messages
+namespace MJohann\Packlib;
+
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Enqueue\AmqpTools\RabbitMqDlxDelayStrategy;
 use Interop\Amqp\AmqpTopic;
 use Interop\Amqp\AmqpQueue;
 use Interop\Amqp\Impl\AmqpBind;
-use Interop\Amqp\AmqpConsumer;
-use Interop\Amqp\AmqpMessage;
 use Interop\Queue\Message;
 use Interop\Queue\Consumer;
 
-class SimpleRabbitMQ {
+class SimpleRabbitMQ
+{
 
     private static $host = null;
     private static $port = null;
@@ -27,7 +33,7 @@ class SimpleRabbitMQ {
     public $exchange = null;
     public $exchangeName = "";
     public $queue = null;
-    public $queueName = "";    
+    public $queueName = "";
     public $subscriptionConsumer = null;
 
     public static function config(string $host = "localhost", string $port = "5672", $username = "user", $password = "password", bool $persisted = true, string $vhost = "/")
@@ -137,7 +143,7 @@ class SimpleRabbitMQ {
         if ($this->subscriptionConsumer === null) {
             $this->subscriptionConsumer = self::$context->createSubscriptionConsumer();
         }
-        $this->subscriptionConsumer->subscribe($consumer, function(Message $message, Consumer $consumer) use ($callback) {
+        $this->subscriptionConsumer->subscribe($consumer, function (Message $message, Consumer $consumer) use ($callback) {
             return $callback($message, $consumer);
         });
     }
@@ -152,5 +158,4 @@ class SimpleRabbitMQ {
     {
         return $this->subscriptionConsumer->consume($time);
     }
-
 }

@@ -1,20 +1,25 @@
 version: '3.3'
 services:
-# https://medium.com/xp-inc/rabbitmq-com-docker-conhecendo-o-admin-cc81f3f6ac3b
   rabbitmq:
-    image: rabbitmq:3.12-management
+    image: rabbitmq:3.13-management
     hostname: rabbitmq
     restart: always
     ports:
       - 5672:5672
-      - 15672:15672
-#      - 25676:25676
+      - 15672:15672 # WEB
+      - 25676:25676
     volumes:
-#      - ./data/rabbitmq/rabbitmq_log:/var/log/rabbitmq
-      - ./data/rabbitmq/rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq-volume1:/var/log/rabbitmq
+      - rabbitmq-volume2:/var/lib/rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=password
+
+volumes:
+  rabbitmq-volume1:
+    driver: local
+  rabbitmq-volume2:
+    driver: local
 
 #networks:
 #  default:
