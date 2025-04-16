@@ -1,5 +1,5 @@
 {
-    "name": "mjohann/simple-redis",
+    "name": "mjohann/simple-rabbitmq",
     "description": "Simple RabbitMQ is a PHP class that offers a clean and reusable abstraction for working with RabbitMQ. It simplifies the process of connecting to message queues and performing common operations like publishing messages, consuming queues, acknowledging deliveries, and managing exchanges and bindings — all without having to deal with the complexity of the underlying configuration.",
     "type": "library",
     "license": "MIT",
