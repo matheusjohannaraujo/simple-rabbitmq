@@ -11,10 +11,14 @@
 namespace MJohann\Packlib;
 
 use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpLib\AmqpContext;
+use Enqueue\AmqpLib\AmqpProducer;
+use Enqueue\AmqpLib\AmqpSubscriptionConsumer;
 use Enqueue\AmqpTools\RabbitMqDlxDelayStrategy;
 use Interop\Amqp\AmqpTopic;
 use Interop\Amqp\AmqpQueue;
 use Interop\Amqp\Impl\AmqpBind;
+use Interop\Amqp\Impl\AmqpMessage;
 use Interop\Queue\Message;
 use Interop\Queue\Consumer;
 
@@ -27,15 +31,24 @@ class SimpleRabbitMQ
     private ?string $password = null;
     private ?bool $persisted = null;
     private ?string $vhost = null;
-    public ?AmqpConnectionFactory $connection = null;
-    public $context = null;
-    public $channel = null;
-    public $exchange = null;
-    public $exchangeName = "";
-    public $queue = null;
-    public $queueName = "";
-    public $subscriptionConsumer = null;
+    private ?AmqpConnectionFactory $connection = null;
+    private ?AmqpContext $context = null;
+    private ?AmqpTopic $exchange = null;
+    private string $exchangeName = "";
+    private ?AmqpQueue $queue = null;
+    private string $queueName = "";
+    private ?AmqpSubscriptionConsumer $subscriptionConsumer = null;
 
+    /**
+     * Initializes the RabbitMQ configuration parameters.
+     *
+     * @param string $host The hostname of the RabbitMQ server.
+     * @param int $port The port number of the RabbitMQ server.
+     * @param string $username The username for authentication.
+     * @param string $password The password for authentication.
+     * @param bool $persisted Whether the connection should be persistent.
+     * @param string $vhost The virtual host to connect to.
+     */
     public function __construct(string $host = "localhost", int $port = 5672, $username = "user", $password = "password", bool $persisted = true, string $vhost = "/")
     {
         $this->host = $host;
@@ -46,6 +59,11 @@ class SimpleRabbitMQ
         $this->vhost = $vhost;
     }
 
+    /**
+     * Opens the connection and creates the AMQP context.
+     *
+     * @return AmqpConnectionFactory|null The connection factory instance or null on failure.
+     */
     public function open(): ?AmqpConnectionFactory
     {
         if ($this->connection === null) {
@@ -63,7 +81,12 @@ class SimpleRabbitMQ
         return $this->connection;
     }
 
-    public function close()
+    /**
+     * Closes the AMQP context and connection.
+     *
+     * @return bool True if closed successfully, false otherwise.
+     */
+    public function close(): bool
     {
         if ($this->context !== null) {
             $this->context->close();
@@ -74,7 +97,27 @@ class SimpleRabbitMQ
         return false;
     }
 
-    public function exchange(string $exchange, string $type = 'direct', int $flag = 2)
+    /**
+     * Re-establishes the connection to RabbitMQ.
+     *
+     * @return void
+     */
+    public function reconnect(): void
+    {
+        $this->close();
+        $this->open();
+    }
+
+    /**
+     * Declares an exchange with the given name and type.
+     *
+     * @param string $exchange The name of the exchange.
+     * @param string $type The type of the exchange (direct, fanout, topic, headers).
+     * @param int $flag Optional flags (e.g. durable).
+     *
+     * @return void
+     */
+    public function exchange(string $exchange, string $type = 'direct', int $flag = 2): void
     {
         if ($type !== 'direct' && $type !== 'fanout' && $type !== 'topic' && $type !== 'headers') {
             $type = AmqpTopic::TYPE_DIRECT;
@@ -86,10 +129,19 @@ class SimpleRabbitMQ
         $this->exchange = $this->context->createTopic($this->exchangeName);
         $this->exchange->addFlag($flag);
         $this->exchange->setType($type);
-        return $this->context->declareTopic($this->exchange);
+        $this->context->declareTopic($this->exchange);
     }
 
-    public function queue(string $queue, int $flag = 2, array $args = [/*'x-max-priority' => 10*/])
+    /**
+     * Declares a queue with the given name and optional arguments.
+     *
+     * @param string $queue The name of the queue.
+     * @param int $flag Queue flags (e.g. durable).
+     * @param array $args Additional arguments for the queue.
+     *
+     * @return int The result of declaring the queue.
+     */
+    public function queue(string $queue, int $flag = 2, array $args = [/*'x-max-priority' => 10*/]): int
     {
         if ($flag !== 0 && $flag !== 1 && $flag !== 2 && $flag !== 4 && $flag !== 8 && $flag !== 16) {
             $flag = AmqpQueue::FLAG_DURABLE;
@@ -103,14 +155,29 @@ class SimpleRabbitMQ
         return $this->context->declareQueue($this->queue);
     }
 
-    public function queueBind()
+    /**
+     * Binds the current queue to the configured exchange.
+     *
+     * @return void
+     */
+    public function queueBind(): void
     {
-        return $this->context->bind(new AmqpBind($this->exchange, $this->queue));
+        $this->context->bind(new AmqpBind($this->exchange, $this->queue));
     }
 
-    public function pub(string $message, string $type, int $ttl = 0, int $delay = 0)
+    /**
+     * Publishes a message to a queue or an exchange.
+     *
+     * @param string $message The message content.
+     * @param string $type Target type: "queue" or "exchange".
+     * @param int $ttl Optional time-to-live in milliseconds.
+     * @param int $delay Optional delay in milliseconds.
+     *
+     * @return bool True on success, false otherwise.
+     */
+    public function pub(string $message, string $type, int $ttl = 0, int $delay = 0): bool
     {
-        $message = $this->context->createMessage($message);
+        /** @var AmqpProducer $producer */
         $producer = $this->context->createProducer();
         if ($delay > 0) {
             $producer = $producer
@@ -120,25 +187,54 @@ class SimpleRabbitMQ
         if ($ttl > 0) {
             $producer = $producer->setTimeToLive($ttl);
         }
+        /** @var AmqpMessage $amqpMessage */
+        $amqpMessage = $this->context->createMessage($message);
         if ($type === "queue") {
-            return $producer->send($this->queue, $message);
+            $producer->send($this->queue, $amqpMessage);
+            return true;
         } else if ($type === "exchange") {
-            return $producer->send($this->exchange, $message);
+            $producer->send($this->exchange, $amqpMessage);
+            return true;
         }
         return false;
     }
 
-    public function pub_exchange(string $message, int $ttl = 0, int $delay = 0)
+    /**
+     * Publishes a message specifically to the exchange.
+     *
+     * @param string $message The message content.
+     * @param int $ttl Optional time-to-live in milliseconds.
+     * @param int $delay Optional delay in milliseconds.
+     *
+     * @return bool True on success, false otherwise.
+     */
+    public function pubExchange(string $message, int $ttl = 0, int $delay = 0): bool
     {
         return $this->pub($message, "exchange", $ttl, $delay);
     }
 
-    public function pub_queue(string $message, int $ttl = 0, int $delay = 0)
+    /**
+     * Publishes a message specifically to the queue.
+     *
+     * @param string $message The message content.
+     * @param int $ttl Optional time-to-live in milliseconds.
+     * @param int $delay Optional delay in milliseconds.
+     *
+     * @return bool True on success, false otherwise.
+     */
+    public function pubQueue(string $message, int $ttl = 0, int $delay = 0): bool
     {
         return $this->pub($message, "queue", $ttl, $delay);
     }
 
-    public function sub(callable $callback, int $time = 0)
+    /**
+     * Subscribes to the queue and sets a callback for incoming messages.
+     *
+     * @param callable $callback The function to handle received messages.
+     *
+     * @return void
+     */
+    public function sub(callable $callback): void
     {
         $consumer = $this->context->createConsumer($this->queue);
         if ($this->subscriptionConsumer === null) {
@@ -149,14 +245,26 @@ class SimpleRabbitMQ
         });
     }
 
-    function readMessage()
+    /**
+     * Reads a single message from the queue.
+     *
+     * @return Message|null The received message or null if none.
+     */
+    public function readMessage(): ?Message
     {
         $consumer = $this->context->createConsumer($this->queue);
         return $consumer->receive();
     }
 
-    public function waitCallbacks(int $time = 0)
+    /**
+     * Starts the consumer and waits for messages to invoke the callback.
+     *
+     * @param int $time Optional timeout in milliseconds.
+     *
+     * @return void
+     */
+    public function waitCallbacks(int $time = 0): void
     {
-        return $this->subscriptionConsumer->consume($time);
+        $this->subscriptionConsumer->consume($time);
     }
 }

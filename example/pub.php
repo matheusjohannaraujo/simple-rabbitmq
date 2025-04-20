@@ -18,7 +18,7 @@ SimpleRabbitMQ::queueBind();
 
 // Publish 10,000 messages to the exchange
 for ($i = 1; $i <= 10000; $i++) {
-    SimpleRabbitMQ::pub_exchange("test " . $i); // Publish a message with a test string
+    SimpleRabbitMQ::pubExchange("test " . $i); // Publish a message with a test string
     echo $i, PHP_EOL; // Output the message number to the console
 }
 
