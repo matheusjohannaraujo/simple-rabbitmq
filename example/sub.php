@@ -37,10 +37,10 @@ $callback2 = function ($message, $consumer) {
 SimpleRabbitMQ::sub($callback2);
 
 // Optionally, read a single message manually (commented out)
-// $srmq->readMessage();
+// SimpleRabbitMQ::readMessage();
 
 // Wait for messages and trigger callbacks for up to 15 seconds
-//$srmq->waitCallbacks(15000); // 15000 milliseconds = 15 seconds
+//SimpleRabbitMQ::waitCallbacks(15000); // 15000 milliseconds = 15 seconds
 
 SimpleRabbitMQ::waitCallbacks(); // Infinite wait
 
