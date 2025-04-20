@@ -5,7 +5,7 @@
 	Country: Brasil
 	State: Pernambuco
 	Developer: Matheus Johann Araujo
-	Date: 2025-04-16
+	Date: 2025-04-20
 */
 
 namespace MJohann\Packlib;
@@ -21,14 +21,14 @@ use Interop\Queue\Consumer;
 class SimpleRabbitMQ
 {
 
-    private static $host = null;
-    private static $port = null;
-    private static $username = null;
-    private static $password = null;
-    private static $persisted = null;
-    private static $vhost = null;
-    public static $connection = null;
-    public static $context = null;
+    private ?string $host = null;
+    private ?int $port = null;
+    private ?string $username = null;
+    private ?string $password = null;
+    private ?bool $persisted = null;
+    private ?string $vhost = null;
+    public ?AmqpConnectionFactory $connection = null;
+    public $context = null;
     public $channel = null;
     public $exchange = null;
     public $exchangeName = "";
@@ -36,38 +36,39 @@ class SimpleRabbitMQ
     public $queueName = "";
     public $subscriptionConsumer = null;
 
-    public static function config(string $host = "localhost", string $port = "5672", $username = "user", $password = "password", bool $persisted = true, string $vhost = "/")
+    public function __construct(string $host = "localhost", int $port = 5672, $username = "user", $password = "password", bool $persisted = true, string $vhost = "/")
     {
-        self::$host = $host;
-        self::$port = $port;
-        self::$username = $username;
-        self::$password = $password;
-        self::$persisted = $persisted;
-        self::$vhost = $vhost;
+        $this->host = $host;
+        $this->port = $port;
+        $this->username = $username;
+        $this->password = $password;
+        $this->persisted = $persisted;
+        $this->vhost = $vhost;
     }
 
-    public static function open()
+    public function open(): ?AmqpConnectionFactory
     {
-        if (self::$connection === null) {
+        if ($this->connection === null) {
             error_reporting(E_ALL ^ E_DEPRECATED ^ E_WARNING);
-            self::$connection = new AmqpConnectionFactory([
-                'host' => self::$host,
-                'port' => self::$port,
-                'vhost' =>  self::$vhost,
-                'user' => self::$username,
-                'pass' => self::$password,
-                'persisted' => self::$persisted,
+            $this->connection = new AmqpConnectionFactory([
+                'host' => $this->host,
+                'port' => $this->port,
+                'vhost' =>  $this->vhost,
+                'user' => $this->username,
+                'pass' => $this->password,
+                'persisted' => $this->persisted,
             ]);
-            self::$context = self::$connection->createContext();
+            $this->context = $this->connection->createContext();
         }
-        return self::$connection;
+        return $this->connection;
     }
 
-    public static function close()
+    public function close()
     {
-        if (self::$context !== null) {
-            self::$context->close();
-            self::$connection = null;
+        if ($this->context !== null) {
+            $this->context->close();
+            unset($this->connection);
+            $this->connection = null;
             return true;
         }
         return false;
@@ -82,10 +83,10 @@ class SimpleRabbitMQ
             $flag = AmqpQueue::FLAG_DURABLE;
         }
         $this->exchangeName = $exchange;
-        $this->exchange = self::$context->createTopic($this->exchangeName);
+        $this->exchange = $this->context->createTopic($this->exchangeName);
         $this->exchange->addFlag($flag);
         $this->exchange->setType($type);
-        return self::$context->declareTopic($this->exchange);
+        return $this->context->declareTopic($this->exchange);
     }
 
     public function queue(string $queue, int $flag = 2, array $args = [/*'x-max-priority' => 10*/])
@@ -94,23 +95,23 @@ class SimpleRabbitMQ
             $flag = AmqpQueue::FLAG_DURABLE;
         }
         $this->queueName = $queue;
-        $this->queue = self::$context->createQueue($this->queueName);
+        $this->queue = $this->context->createQueue($this->queueName);
         $this->queue->addFlag($flag);
         if (count($args) > 0) {
             $this->queue->setArguments($args);
         }
-        return self::$context->declareQueue($this->queue);
+        return $this->context->declareQueue($this->queue);
     }
 
     public function queueBind()
     {
-        return self::$context->bind(new AmqpBind($this->exchange, $this->queue));
+        return $this->context->bind(new AmqpBind($this->exchange, $this->queue));
     }
 
     public function pub(string $message, string $type, int $ttl = 0, int $delay = 0)
     {
-        $message = self::$context->createMessage($message);
-        $producer = self::$context->createProducer();
+        $message = $this->context->createMessage($message);
+        $producer = $this->context->createProducer();
         if ($delay > 0) {
             $producer = $producer
                 ->setDelayStrategy(new RabbitMqDlxDelayStrategy())
@@ -139,9 +140,9 @@ class SimpleRabbitMQ
 
     public function sub(callable $callback, int $time = 0)
     {
-        $consumer = self::$context->createConsumer($this->queue);
+        $consumer = $this->context->createConsumer($this->queue);
         if ($this->subscriptionConsumer === null) {
-            $this->subscriptionConsumer = self::$context->createSubscriptionConsumer();
+            $this->subscriptionConsumer = $this->context->createSubscriptionConsumer();
         }
         $this->subscriptionConsumer->subscribe($consumer, function (Message $message, Consumer $consumer) use ($callback) {
             return $callback($message, $consumer);
@@ -150,7 +151,7 @@ class SimpleRabbitMQ
 
     function readMessage()
     {
-        $consumer = self::$context->createConsumer($this->queue);
+        $consumer = $this->context->createConsumer($this->queue);
         return $consumer->receive();
     }
 

@@ -1,4 +1,4 @@
-# Simple RabbitMQ
+# [Simple RabbitMQ](https://github.com/matheusjohannaraujo/simple-rabbitmq)
 
 **Simple RabbitMQ** is a PHP class that offers a clean and reusable abstraction for working with RabbitMQ. It simplifies the process of connecting to message queues and performing common operations like publishing messages, consuming queues, acknowledging deliveries, and managing exchanges and bindings — all without having to deal with the complexity of the underlying configuration.
 
@@ -12,7 +12,7 @@ composer require mjohann/simple-rabbitmq
 
 ## ⚙️ Requirements
 
-- PHP 7.4 or higher
+- PHP 8.0 or higher
 
 ## 🚀 Features
 
@@ -36,15 +36,12 @@ composer require mjohann/simple-rabbitmq
 ```php
 <?php
 
-require_once "vendor/autoload.php";
-
 use MJohann\Packlib\SimpleRabbitMQ;
 
-// Create a new instance of the SimpleRabbitMQ class
-$srmq = new SimpleRabbitMQ();
+require_once "vendor/autoload.php";
 
-// Configure connection parameters
-$srmq->config();
+// Create and configure a RabbitMQ connection
+$srmq = new SimpleRabbitMQ();
 
 // Open the connection to the RabbitMQ server
 $srmq->open();
@@ -73,15 +70,12 @@ $srmq->close();
 ```php
 <?php
 
-require_once "vendor/autoload.php";
-
 use MJohann\Packlib\SimpleRabbitMQ;
 
-// Create a new instance of the SimpleRabbitMQ class
-$srmq = new SimpleRabbitMQ();
+require_once "vendor/autoload.php";
 
-// Configure connection parameters
-$srmq->config();
+// Create and configure a RabbitMQ connection
+$srmq = new SimpleRabbitMQ();
 
 // Open the connection to the RabbitMQ server
 $srmq->open();
@@ -123,6 +117,8 @@ For more examples, see the [`example/`](example/) file in the repository.
 simple-rabbitmq/
 ├── src/
 │   └── SimpleRabbitMQ.php
+│   └── Facades/
+│       └── SimpleRabbitMQ.php
 ├── example/
 │   └── docker-compose.php
 │   └── sub.php
