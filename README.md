@@ -18,13 +18,14 @@ composer require mjohann/simple-rabbitmq
 
 - Simple RabbitMQ uses [`enqueue/amqp-lib`](https://packagist.org/packages/enqueue/amqp-lib) as a dependency
 - Supported:
-    - config — Configures the connection parameters (e.g., host, port, credentials).
+    - __construct — Configures the connection parameters (e.g., host, port, credentials).
     - open — Opens a connection to the RabbitMQ server.
     - close — Closes the connection.
     - exchange($name) — Declares an exchange.
+    - pubExchange($message) — Publishes a message to the exchange.
     - queue($name) — Declares a queue.
     - queueBind() — Binds a queue to an exchange.
-    - pub_exchange($message) — Publishes a message to the exchange.
+    - pubQueue($message) — Publishes a message to the queue.    
     - sub($callback) — Subscribes a callback function to consume messages from the queue.
     - waitCallbacks($milliseconds) — Waits for messages and dispatches them to the subscribed callbacks for a given duration.
     - readMessage() — (Commented out, but exists) Likely reads a single message from the queue.
